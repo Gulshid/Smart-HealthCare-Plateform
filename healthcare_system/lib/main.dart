@@ -16,7 +16,7 @@ class HealthRiskApp extends StatelessWidget {
     //   iOS simulator    -> http://localhost:8000
     //   Physical device  -> http://<your-lan-ip>:8000
     //   Production       -> your deployed API URL
-    final apiService = RiskApiService(baseUrl: 'http://10.0.2.2:8000');
+    final apiService = RiskApiService(baseUrl: 'http://localhost:8000');
 
     return MaterialApp(
       title: 'Smart Healthcare Risk',
