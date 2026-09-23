@@ -1,0 +1,53 @@
+{
+  "best_model": "xgboost",
+  "metrics": {
+    "accuracy": 0.7662,
+    "precision": 0.68,
+    "recall": 0.6296,
+    "f1": 0.6538,
+    "roc_auc": 0.8244
+  },
+  "all_results": {
+    "logistic_regression": {
+      "accuracy": 0.7078,
+      "precision": 0.6,
+      "recall": 0.5,
+      "f1": 0.5455,
+      "roc_auc": 0.813
+    },
+    "random_forest": {
+      "accuracy": 0.7273,
+      "precision": 0.6429,
+      "recall": 0.5,
+      "f1": 0.5625,
+      "roc_auc": 0.8085
+    },
+    "xgboost": {
+      "accuracy": 0.7662,
+      "precision": 0.68,
+      "recall": 0.6296,
+      "f1": 0.6538,
+      "roc_auc": 0.8244
+    }
+  },
+  "feature_order": [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age"
+  ],
+  "feature_importance": {
+    "Glucose": 0.3008,
+    "BMI": 0.1501,
+    "Age": 0.1323,
+    "Insulin": 0.1007,
+    "Pregnancies": 0.0934,
+    "DiabetesPedigreeFunction": 0.0908,
+    "BloodPressure": 0.0727,
+    "SkinThickness": 0.0592
+  }
+}
