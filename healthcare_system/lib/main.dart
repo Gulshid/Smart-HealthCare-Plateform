@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/risk_input_screen.dart';
 import 'services/risk_api_service.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const HealthRiskApp());
@@ -20,10 +21,7 @@ class HealthRiskApp extends StatelessWidget {
 
     return MaterialApp(
       title: 'Smart Healthcare Risk',
-      theme: ThemeData(
-        colorSchemeSeed: Colors.teal,
-        useMaterial3: true,
-      ),
+      theme: buildAppTheme(),
       home: RiskInputScreen(apiService: apiService),
     );
   }

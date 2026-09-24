@@ -13,7 +13,7 @@ class RiskArcGauge extends StatelessWidget {
   const RiskArcGauge({
     super.key,
     required this.probability,
-    required this.b/Users/mac/Downloads/healthcare_ai/flutter_app/lib/widgets/risk_arc_gauge.dartand,
+    required this.band,
     this.size = 132,
   });
 
