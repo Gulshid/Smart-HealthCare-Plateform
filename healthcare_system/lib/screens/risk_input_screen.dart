@@ -156,7 +156,13 @@ class _RiskInputScreenState extends State<RiskInputScreen> {
                         label: 'Sex',
                         value: _sex,
                         options: const {1: 'Male', 0: 'Female'},
-                        onChanged: (v) => setState(() => _sex = v),
+                        onChanged: (v) => setState(() {
+                          _sex = v;
+                          // The diabetes model's "pregnancies" feature only
+                          // applies to female patients — force it to 0 and
+                          // hide the field for male users below.
+                          if (v == 1) _pregnanciesCtrl.text = '0';
+                        }),
                       ),
                     ],
                   ),
@@ -164,8 +170,9 @@ class _RiskInputScreenState extends State<RiskInputScreen> {
                     title: 'Diabetes indicators',
                     subtitle: 'From routine blood work and vitals.',
                     children: [
-                      _LabeledField(
-                          label: 'Pregnancies', controller: _pregnanciesCtrl, min: 0, max: 20),
+                      if (_sex == 0) // female only — see note on the Sex toggle
+                        _LabeledField(
+                            label: 'Pregnancies', controller: _pregnanciesCtrl, min: 0, max: 20),
                       _LabeledField(
                           label: 'Glucose (mg/dL)', controller: _glucoseCtrl, min: 0, max: 300),
                       _LabeledField(
