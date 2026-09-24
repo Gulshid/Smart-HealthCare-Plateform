@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/risk_input_screen.dart';
+import 'screens/splash_screen.dart';
 import 'services/risk_api_service.dart';
 import 'theme/app_theme.dart';
 
@@ -20,9 +20,10 @@ class HealthRiskApp extends StatelessWidget {
     final apiService = RiskApiService(baseUrl: 'http://localhost:8000');
 
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Smart Healthcare Risk',
       theme: buildAppTheme(),
-      home: RiskInputScreen(apiService: apiService),
+      home: SplashScreen(apiService: apiService),
     );
   }
 }
