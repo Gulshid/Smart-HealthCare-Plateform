@@ -14,6 +14,31 @@ class RiskApiService {
 
   RiskApiService({required this.baseUrl});
 
+  /// Turns a FastAPI/Pydantic 422 validation error body into a
+  /// human-readable message, e.g. "diabetes.pregnancies: Input should
+  /// be less than or equal to 20 (got 23)." Falls back to the raw
+  /// body for anything else (network errors, 500s, etc.).
+  String _describeError(int statusCode, String body) {
+    if (statusCode == 422) {
+      try {
+        final decoded = jsonDecode(body);
+        final details = decoded['detail'] as List?;
+        if (details != null && details.isNotEmpty) {
+          final messages = details.map((d) {
+            final loc = (d['loc'] as List?)?.skip(1).join('.') ?? 'field';
+            final msg = d['msg'] ?? 'invalid value';
+            final input = d['input'];
+            return '$loc: $msg${input != null ? ' (got $input)' : ''}';
+          }).join('\n');
+          return messages;
+        }
+      } catch (_) {
+        // Fall through to the generic message below.
+      }
+    }
+    return 'Server returned an error (status $statusCode): $body';
+  }
+
   Future<RiskResult> predictDiabetes(DiabetesInput input) async {
     final response = await http.post(
       Uri.parse('$baseUrl/predict/diabetes'),
@@ -22,7 +47,7 @@ class RiskApiService {
     );
 
     if (response.statusCode != 200) {
-      throw ApiException('Diabetes prediction failed: ${response.body}');
+      throw ApiException(_describeError(response.statusCode, response.body));
     }
     return RiskResult.fromJson(jsonDecode(response.body));
   }
@@ -35,7 +60,7 @@ class RiskApiService {
     );
 
     if (response.statusCode != 200) {
-      throw ApiException('Heart prediction failed: ${response.body}');
+      throw ApiException(_describeError(response.statusCode, response.body));
     }
     return RiskResult.fromJson(jsonDecode(response.body));
   }
@@ -52,7 +77,7 @@ class RiskApiService {
     );
 
     if (response.statusCode != 200) {
-      throw ApiException('Combined prediction failed: ${response.body}');
+      throw ApiException(_describeError(response.statusCode, response.body));
     }
     return CombinedRiskResult.fromJson(jsonDecode(response.body));
   }

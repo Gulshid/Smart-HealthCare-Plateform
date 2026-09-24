@@ -15,6 +15,7 @@ class RiskInputScreen extends StatefulWidget {
 
 class _RiskInputScreenState extends State<RiskInputScreen> {
   final _pageController = PageController();
+  final _formKey = GlobalKey<FormState>();
   int _step = 0;
   bool _loading = false;
   static const _stepLabels = ['Basics', 'Diabetes', 'Heart'];
@@ -64,7 +65,21 @@ class _RiskInputScreenState extends State<RiskInputScreen> {
         duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic);
   }
 
+  /// Runs the form's validators (checked ranges match the backend's
+  /// exactly) before advancing, so bad values are caught here instead
+  /// of round-tripping to the API and coming back as a 422.
+  bool _validateAndReport() {
+    final valid = _formKey.currentState?.validate() ?? true;
+    if (!valid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fix the highlighted field before continuing.')),
+      );
+    }
+    return valid;
+  }
+
   Future<void> _submit() async {
+    if (!_validateAndReport()) return;
     setState(() => _loading = true);
     try {
       final age = int.tryParse(_ageCtrl.text) ?? 45;
@@ -102,9 +117,10 @@ class _RiskInputScreenState extends State<RiskInputScreen> {
           MaterialPageRoute(builder: (_) => RiskResultScreen(result: result)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Couldn\'t reach the server: $e')),
-      );
+      final message = e is ApiException
+          ? e.message // already a friendly, parsed message
+          : 'Couldn\'t reach the server. Is it running? ($e)';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -115,7 +131,9 @@ class _RiskInputScreenState extends State<RiskInputScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Health Risk Assessment')),
       body: SafeArea(
-        child: Column(
+        child: Form(
+          key: _formKey,
+          child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 4, 24, 20),
@@ -132,7 +150,7 @@ class _RiskInputScreenState extends State<RiskInputScreen> {
                     subtitle:
                         'Used by both models. This tool gives a research/decision-support estimate — not a medical diagnosis.',
                     children: [
-                      _LabeledField(label: 'Age', controller: _ageCtrl),
+                      _LabeledField(label: 'Age', controller: _ageCtrl, min: 1, max: 120),
                       const SizedBox(height: 16),
                       _SegmentedToggle(
                         label: 'Sex',
@@ -146,14 +164,22 @@ class _RiskInputScreenState extends State<RiskInputScreen> {
                     title: 'Diabetes indicators',
                     subtitle: 'From routine blood work and vitals.',
                     children: [
-                      _LabeledField(label: 'Pregnancies', controller: _pregnanciesCtrl),
-                      _LabeledField(label: 'Glucose (mg/dL)', controller: _glucoseCtrl),
-                      _LabeledField(label: 'Blood pressure (mm Hg)', controller: _bpCtrl),
-                      _LabeledField(label: 'Skin thickness (mm)', controller: _skinCtrl),
-                      _LabeledField(label: 'Insulin (mu U/ml)', controller: _insulinCtrl),
-                      _LabeledField(label: 'BMI', controller: _bmiCtrl),
                       _LabeledField(
-                          label: 'Diabetes pedigree function', controller: _pedigreeCtrl),
+                          label: 'Pregnancies', controller: _pregnanciesCtrl, min: 0, max: 20),
+                      _LabeledField(
+                          label: 'Glucose (mg/dL)', controller: _glucoseCtrl, min: 0, max: 300),
+                      _LabeledField(
+                          label: 'Blood pressure (mm Hg)', controller: _bpCtrl, min: 0, max: 200),
+                      _LabeledField(
+                          label: 'Skin thickness (mm)', controller: _skinCtrl, min: 0, max: 100),
+                      _LabeledField(
+                          label: 'Insulin (mu U/ml)', controller: _insulinCtrl, min: 0, max: 900),
+                      _LabeledField(label: 'BMI', controller: _bmiCtrl, min: 0, max: 80),
+                      _LabeledField(
+                          label: 'Diabetes pedigree function',
+                          controller: _pedigreeCtrl,
+                          min: 0,
+                          max: 3),
                     ],
                   ),
                   _StepScaffold(
@@ -247,7 +273,13 @@ class _RiskInputScreenState extends State<RiskInputScreen> {
                     child: FilledButton(
                       onPressed: _loading
                           ? null
-                          : () => _step < 2 ? _goTo(_step + 1) : _submit(),
+                          : () {
+                              if (_step < 2) {
+                                if (_validateAndReport()) _goTo(_step + 1);
+                              } else {
+                                _submit();
+                              }
+                            },
                       child: _loading
                           ? const SizedBox(
                               height: 20,
@@ -262,6 +294,7 @@ class _RiskInputScreenState extends State<RiskInputScreen> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -297,16 +330,31 @@ class _StepScaffold extends StatelessWidget {
 class _LabeledField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
+  final num? min;
+  final num? max;
 
-  const _LabeledField({required this.label, required this.controller});
+  const _LabeledField({
+    required this.label,
+    required this.controller,
+    this.min,
+    this.max,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final rangeHint = (min != null && max != null) ? 'Range: $min–$max' : null;
     return TextFormField(
       controller: controller,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(labelText: label),
+      decoration: InputDecoration(labelText: label, helperText: rangeHint),
       style: AppType.data(size: 15),
+      validator: (value) {
+        final v = double.tryParse(value ?? '');
+        if (v == null) return 'Enter a number';
+        if (min != null && v < min!) return 'Must be at least $min';
+        if (max != null && v > max!) return 'Must be at most $max';
+        return null;
+      },
     );
   }
 }
